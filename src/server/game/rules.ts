@@ -1,4 +1,5 @@
 import {
+  ALL_BURIED_GRACE,
   BUILD,
   BELL_RINGS_PER_PLAYER,
   CART_X,
@@ -63,6 +64,7 @@ export function startRound(room: Room): void {
   room.meetingMsg = null;
   room.meetingResultAt = -1;
   room.meetingCd = 0;
+  room.allBuriedTicks = 0;
   room.lastRoundEnd = null;
 
   // two camp lanterns with deep fuel reserves
@@ -124,6 +126,19 @@ export function checkWins(room: Room): void {
   if (room.mole && room.mole.stash >= STASH_TARGET) {
     endRound(room, 'mole', 'stash');
     return;
+  }
+  // every connected dwarf buried = nobody left to dig anyone out
+  const present = room.players.filter(
+    (p): p is PlayerSlot => !!p?.dwarf && !p.banished && p.socketId !== null
+  );
+  if (present.length > 0 && present.every((p) => p.dwarf!.buried)) {
+    room.allBuriedTicks++;
+    if (room.allBuriedTicks >= ALL_BURIED_GRACE) {
+      endRound(room, 'mole', 'buried');
+      return;
+    }
+  } else {
+    room.allBuriedTicks = 0;
   }
   if (room.roundTicksLeft <= 0) {
     endRound(room, room.mole ? 'mole' : 'miners', 'timer');

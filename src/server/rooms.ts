@@ -50,6 +50,7 @@ export function createRoom(seed?: number): Room {
     meeting: null,
     meetingMsg: null,
     meetingCd: 0,
+    allBuriedTicks: 0,
     mole: null,
     introLeft: 0,
     lastRoundEnd: null,

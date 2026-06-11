@@ -158,7 +158,7 @@ export interface PlayerRoundStats {
 export interface RoundEndMsg {
   round: number;
   winner: 'miners' | 'mole';
-  reason: 'quota' | 'banished' | 'timer' | 'stash';
+  reason: 'quota' | 'banished' | 'timer' | 'stash' | 'buried';
   moleSlot: number;
   moleName: string;
   hatHistory: number[]; // every hat the mole wore

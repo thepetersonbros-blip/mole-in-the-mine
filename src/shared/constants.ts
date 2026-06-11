@@ -108,6 +108,9 @@ export const MEETING_COOLDOWN = sec(45);
 export const VOTE_TICKS = sec(60);
 export const BELL_RANGE = 2.5;
 
+// everyone-is-buried: short grace so the last collapse lands, then round over
+export const ALL_BURIED_GRACE = sec(2.5);
+
 // --- rooms ---
 export const MAX_PLAYERS = 8; // soft cap; tuned for 6
 export const MIN_PLAYERS = 2;

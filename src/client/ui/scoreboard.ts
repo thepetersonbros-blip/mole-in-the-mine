@@ -19,7 +19,8 @@ const REASONS: Record<string, string> = {
   quota: 'The cart hit the quota!',
   banished: 'The mole was banished!',
   timer: 'The whistle blew... the cart came up short.',
-  stash: 'The mole filled a secret stash.'
+  stash: 'The mole filled a secret stash.',
+  buried: 'Every single dwarf got buried alive. The mine keeps the gold.'
 };
 
 export function renderBoard(): void {

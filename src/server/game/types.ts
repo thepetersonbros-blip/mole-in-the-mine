@@ -102,6 +102,7 @@ export interface Room {
   meeting: MeetingState | null;
   meetingMsg: MeetingMsg | null; // last meeting payload (for syncs mid-meeting)
   meetingCd: number;
+  allBuriedTicks: number; // how long every connected dwarf has been buried
   mole: MoleSecret | null;
   introLeft: number;
   lastRoundEnd: RoundEndMsg | null;

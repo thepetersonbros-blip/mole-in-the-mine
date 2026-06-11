@@ -2,7 +2,7 @@
 // bury, rescue) driven through the real handlers.
 
 import { describe, expect, it } from 'vitest';
-import { QUOTA, STASH_TARGET } from '../../src/shared/constants';
+import { ALL_BURIED_GRACE, QUOTA, STASH_TARGET } from '../../src/shared/constants';
 import { T, withGold } from '../../src/shared/tiles';
 import { startRound } from '../../src/server/game/rules';
 import { handleAction } from '../../src/server/game/actions';
@@ -85,6 +85,27 @@ describe('round endings', () => {
     // fresh identities after the meeting
     const eids = room.players.filter((p) => p?.dwarf).map((p) => p!.dwarf!.eid);
     expect(new Set(eids).size).toBe(eids.length);
+    cleanup(room);
+  });
+
+  it('everyone buried = round over, the mine wins', () => {
+    const { room } = startedRoom();
+    for (const p of room.players) {
+      if (p?.dwarf) bury(room, p);
+    }
+    ticks(room, ALL_BURIED_GRACE + 10);
+    expect(room.phase).toBe('roundEnd');
+    expect(room.lastRoundEnd?.winner).toBe('mole');
+    expect(room.lastRoundEnd?.reason).toBe('buried');
+    cleanup(room);
+  });
+
+  it('one free dwarf keeps the round alive', () => {
+    const { room } = startedRoom();
+    const players = room.players.filter((p) => p?.dwarf);
+    for (let i = 1; i < players.length; i++) bury(room, players[i]!);
+    ticks(room, ALL_BURIED_GRACE + 20);
+    expect(room.phase).toBe('playing');
     cleanup(room);
   });
 
