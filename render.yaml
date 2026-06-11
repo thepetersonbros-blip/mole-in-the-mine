@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: mole-in-the-mine
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: node dist/server/index.cjs
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
