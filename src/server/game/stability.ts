@@ -10,6 +10,7 @@ import {
   SPAN_CRIT,
   SPAN_STABLE,
   SURFACE_Y,
+  WORLD_H,
   WORLD_W
 } from '../../shared/constants';
 import { T, isAnchor, isSolid, metaCrack, withCrack } from '../../shared/tiles';
@@ -38,32 +39,49 @@ export function processStability(room: Room): void {
 }
 
 function evaluateSegment(room: Room, x: number, y: number, visited: Set<number>): void {
-  // walk to the left anchor
-  let left = x;
-  let steps = 0;
-  while (steps < SCAN_CAP && !isAnchor(getTile(room, left - 1, y))) {
-    left--;
-    steps++;
-  }
-  const key = idx(left, y);
+  // Walk the connected run of open cells through (x,y). Flat continuation is
+  // preferred; a one-tile step DOWN or UP continues the same run, so a
+  // staircase is one long unsupported passage, not a series of fresh tunnels.
+  // Posts (or natural rock dead-ends) are the only things that end a run.
+  const walk = (sx: number, sy: number, dir: -1 | 1): { x: number; y: number }[] => {
+    const out: { x: number; y: number }[] = [];
+    let cx = sx;
+    let cy = sy;
+    for (let steps = 0; steps < SCAN_CAP; steps++) {
+      const nx = cx + dir;
+      if (!isAnchor(getTile(room, nx, cy))) {
+        cx = nx;
+      } else if (cy + 2 < WORLD_H && !isAnchor(getTile(room, nx, cy + 1))) {
+        cx = nx;
+        cy = cy + 1; // stair step down
+      } else if (cy - 1 > SURFACE_Y && !isAnchor(getTile(room, nx, cy - 1))) {
+        cx = nx;
+        cy = cy - 1; // stair step up
+      } else {
+        break;
+      }
+      out.push({ x: cx, y: cy });
+    }
+    return out;
+  };
+
+  const leftRun = walk(x, y, -1);
+  const rightRun = walk(x, y, 1);
+  const first = leftRun.length > 0 ? leftRun[leftRun.length - 1] : { x, y };
+  const key = idx(first.x, first.y);
   if (visited.has(key)) return;
   visited.add(key);
 
-  let right = x;
-  steps = 0;
-  while (steps < SCAN_CAP && !isAnchor(getTile(room, right + 1, y))) {
-    right++;
-    steps++;
-  }
-  const span = right - left + 1;
-  const capped = span >= SCAN_CAP * 2; // never found anchors: treat as huge
+  const cells = [...leftRun, { x, y }, ...rightRun];
+  const span = cells.length;
+  const capped = leftRun.length >= SCAN_CAP || rightRun.length >= SCAN_CAP;
 
   let stage = 0;
   if (capped || span >= SPAN_CRIT) stage = 2;
   else if (span > SPAN_STABLE) stage = 1;
 
-  for (let cx = left; cx <= right; cx++) {
-    applyStage(room, cx, y - 1, stage);
+  for (const c of cells) {
+    applyStage(room, c.x, c.y - 1, stage);
   }
 }
 

@@ -121,4 +121,57 @@ describe('stability and cave-ins', () => {
     expect(SPAN_STABLE).toBeGreaterThanOrEqual(3);
     expect(SPAN_STABLE).toBeLessThan(7);
   });
+
+  it('staircases with no posts are NOT free: the run keeps counting downhill', () => {
+    const room = testRoom(8);
+    sandboxRound(room);
+    stamp(room, 20, 18, `
+      ##########
+      #.########
+      ##.#######
+      ###.######
+      ####.#####
+      #####.####
+      ######.###
+      #######.##
+      ##########
+    `);
+    const evs = ticks(room, FUSE_MAX + 400);
+    expect(evs.some((e) => e.k === 'crack' && e.stage > 0)).toBe(true);
+    expect(evs.some((e) => e.k === 'tile' && e.cause === 'rockfall')).toBe(true);
+    cleanup(room);
+  });
+
+  it('a post on a stair landing splits the run back to safe', () => {
+    const room = testRoom(9);
+    sandboxRound(room);
+    stamp(room, 20, 18, `
+      ##########
+      #.########
+      ##.#######
+      ###.######
+      ####P#####
+      #####.####
+      ######.###
+      #######.##
+      ##########
+    `);
+    const evs = ticks(room, FUSE_MAX + 300);
+    expect(evs.some((e) => e.k === 'tile' && e.cause === 'rockfall')).toBe(false);
+    cleanup(room);
+  });
+
+  it('lanterns do NOT hold ceilings up (only posts do)', () => {
+    const room = testRoom(10);
+    sandboxRound(room);
+    stamp(room, 20, 18, `
+      ##########
+      #........#
+      ##########
+    `);
+    room.lanterns.push({ id: 1, x: 24, y: 19, lit: true, fuel: 999999 });
+    const evs = ticks(room, FUSE_MAX + 400);
+    expect(evs.some((e) => e.k === 'tile' && e.cause === 'rockfall')).toBe(true);
+    cleanup(room);
+  });
 });

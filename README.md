@@ -27,7 +27,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173 in two browser windows and play with yourself.
+Open http://localhost:5173 in two browser windows and play with yourself. Make the second window a private/incognito window: normal tabs in the same browser share a rejoin token, so the game thinks they are the same dwarf.
 
 To test on your phone: run `npm run build` then `npm start`, find your PC's IP (`ipconfig`), and open `http://YOUR-PC-IP:3000` on the phone (same wifi). Windows may ask to allow Node through the firewall: say yes.
 
