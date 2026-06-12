@@ -82,6 +82,27 @@ describe('movement', () => {
     expect(p.y).toBeGreaterThan(3.4);
   });
 
+  it('hops off a ladder into a one-tall corridor (exit assist)', () => {
+    // a ladder column with a 1x1 side tunnel halfway up
+    const w = world([
+      '..........',
+      '####L#####',
+      '....L.....', // <- corridor at y=2, reachable only with exact alignment
+      '####L#####',
+      '####L#####',
+      '##########'
+    ]);
+    const p = makePhys(4.5, 5);
+    // climb to a deliberately awkward height mid-corridor, then push right
+    for (let i = 0; i < 200 && p.y > 3.2; i++) step(p, { lr: 0, ud: 1, facing: 1 }, w);
+    let entered = false;
+    for (let i = 0; i < 80; i++) {
+      step(p, { lr: 1, ud: i % 4 === 0 ? 1 : 0, facing: 1 }, w);
+      if (p.x > 5.6 && p.y === 3) entered = true;
+    }
+    expect(entered).toBe(true);
+  });
+
   it('stuns after a long fall', () => {
     const w = world([
       '#.........',

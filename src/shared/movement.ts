@@ -108,6 +108,16 @@ export function step(p: Phys, input: StepInput, w: PhysWorld): StepResult {
       p.y = Math.round(p.y) - 1;
       p.x = nx;
       p.vy = 0;
+    } else if (p.onLadder) {
+      // ladder exit assist: stepping into a one-tall corridor needs feet at
+      // an exact tile boundary, which mid-climb never is. If the body fits at
+      // the nearest aligned height, snap there and step off.
+      const snapped = Math.round(p.y);
+      if (Math.abs(snapped - p.y) <= 0.49 && !bodyBlocked(w, nx, snapped)) {
+        p.y = snapped;
+        p.x = nx;
+        p.vy = 0;
+      }
     }
   }
 

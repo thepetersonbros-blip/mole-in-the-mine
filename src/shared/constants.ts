@@ -48,9 +48,9 @@ export const ROUND_TICKS = sec(10 * 60);
 
 // --- building: personal cooldowns that bank charges ---
 export const BUILD = {
-  post: { cooldown: sec(25), max: 3, start: 2 },
-  ladder: { cooldown: sec(10), max: 5, start: 3 },
-  lantern: { cooldown: sec(45), max: 2, start: 1 }
+  post: { cooldown: sec(18), max: 3, start: 2 },
+  ladder: { cooldown: sec(7), max: 5, start: 3 },
+  lantern: { cooldown: sec(32), max: 2, start: 1 }
 } as const;
 export type BuildKind = keyof typeof BUILD;
 
@@ -73,10 +73,10 @@ export const HELMET_RADIUS = 2.2;
 export const LANTERN_FUEL = sec(3.5 * 60);
 
 // --- stability / cave-ins ---
-export const SPAN_STABLE = 4; // unsupported ceiling run <= this is safe
-export const SPAN_CRIT = 7; // >= this collapses fast
-export const FUSE_MIN = sec(9);
-export const FUSE_MAX = sec(14);
+export const SPAN_STABLE = 5; // unsupported ceiling run <= this is safe
+export const SPAN_CRIT = 8; // >= this collapses fast
+export const FUSE_MIN = sec(11);
+export const FUSE_MAX = sec(17);
 export const FUSE_CRIT = sec(1.5);
 export const SCAN_BUDGET = 64; // stability scans per tick
 export const ROCK_FALL_TICKS = 3; // a falling rock drops 1 tile per this many ticks
