@@ -112,7 +112,7 @@ export const BELL_RANGE = 2.5;
 export const ALL_BURIED_GRACE = sec(2.5);
 
 // --- rooms ---
-export const MAX_PLAYERS = 8; // soft cap; tuned for 6
+export const MAX_PLAYERS = 10; // tuned for 6, roomy for 10
 export const MIN_PLAYERS = 2;
 export const ROOM_GC_MS = 10 * 60 * 1000;
 export const REJOIN_GRACE_TICKS = sec(60);
@@ -120,7 +120,7 @@ export const ROUND_END_TICKS = sec(15);
 export const INTRO_TICKS = sec(4);
 
 // --- hats ---
-// 6 pickable + 4 extra colors the mole can also fake (a mystery 7th hat!)
+// 10 pickable + 2 extra colors the mole can also fake (a mystery hat!)
 export const HAT_COLORS = [
   '#e23b3b', // red
   '#3b6fe2', // blue
@@ -131,8 +131,10 @@ export const HAT_COLORS = [
   '#34c8c8', // cyan
   '#e86fb1', // pink
   '#f0f0e8', // white
-  '#454545' // black
+  '#454545', // black
+  '#9ade4a', // lime
+  '#8a6c4a' // brown
 ] as const;
-export const PICKABLE_HATS = 6;
+export const PICKABLE_HATS = 10;
 
 export const PROTOCOL_VERSION = 1;

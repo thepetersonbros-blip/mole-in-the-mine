@@ -49,7 +49,8 @@ export function startRound(room: Room): void {
   room.tiles = gen.tiles;
   room.meta = gen.meta;
   room.cart = 0;
-  room.quota = QUOTA;
+  // quota scales with the crew: 140 for a 6-dwarf shift, more shovels = more gold owed
+  room.quota = Math.max(60, Math.round((QUOTA * connectedPlayers(room).length) / 6));
   room.roundTicksLeft = ROUND_TICKS;
   room.lanterns = [];
   room.piles = [];
