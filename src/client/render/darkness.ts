@@ -1,5 +1,7 @@
 // Darkness mask: a screen-sized offscreen canvas filled with near-black,
-// with light punched out via destination-out radial gradients.
+// with light punched out via destination-out radial gradients. After the
+// mask lands, warmLight() paints a low-alpha additive orange pass so the
+// tunnels feel torch-lit instead of just less dark.
 
 import { HELMET_RADIUS, LANTERN_RADIUS, SURFACE_Y, TILE_PX } from '../../shared/constants';
 import { F, dwarfRenderPos, game } from '../state';
@@ -16,6 +18,10 @@ export interface View {
   h: number;
 }
 
+function flicker(now: number, seed: number): number {
+  return 1 + Math.sin(now / 110 + seed) * 0.05 + Math.sin(now / 37 + seed * 2.7) * 0.025;
+}
+
 function hole(v: View, wx: number, wy: number, radiusTiles: number, soft = 1): void {
   if (!mctx) return;
   const sx = (wx - v.camX) * v.scale;
@@ -28,6 +34,38 @@ function hole(v: View, wx: number, wy: number, radiusTiles: number, soft = 1): v
   mctx.beginPath();
   mctx.arc(sx, sy, r, 0, Math.PI * 2);
   mctx.fill();
+}
+
+interface Light {
+  wx: number;
+  wy: number;
+  r: number; // tiles
+  facing: 0 | 1 | -1; // 0 = round lantern, else helmet beam direction
+}
+
+function collectLights(now: number): Light[] {
+  const lights: Light[] = [];
+  for (const l of game.lanterns.values()) {
+    if (!l.lit) continue;
+    lights.push({
+      wx: (l.x + 0.5) * TILE_PX,
+      wy: (l.y + 0.6) * TILE_PX,
+      r: LANTERN_RADIUS * flicker(now, l.id),
+      facing: 0
+    });
+  }
+  for (const rd of game.dwarfs.values()) {
+    if (rd.flags & F.buried) continue;
+    const isMe = rd.eid === game.myEid;
+    const pos = isMe ? predictedPos(now) : dwarfRenderPos(rd, now);
+    lights.push({
+      wx: pos.x * TILE_PX,
+      wy: (pos.y - 1) * TILE_PX,
+      r: HELMET_RADIUS,
+      facing: rd.flags & F.left ? -1 : 1
+    });
+  }
+  return lights;
 }
 
 export function drawDarkness(ctx: CanvasRenderingContext2D, v: View, now: number): void {
@@ -58,24 +96,38 @@ export function drawDarkness(ctx: CanvasRenderingContext2D, v: View, now: number
   mctx.fillStyle = bleed;
   mctx.fillRect(0, surfScreen, v.w, 2.2 * TILE_PX * v.scale);
 
-  // lanterns
-  for (const l of game.lanterns.values()) {
-    if (!l.lit) continue;
-    const fl = 1 + Math.sin(now / 110 + l.id) * 0.06;
-    hole(v, (l.x + 0.5) * TILE_PX, (l.y + 0.6) * TILE_PX, LANTERN_RADIUS * fl);
-  }
-
-  // helmet lamps (every dwarf, including me)
-  for (const rd of game.dwarfs.values()) {
-    if (rd.flags & F.buried) continue;
-    const isMe = rd.eid === game.myEid;
-    const pos = isMe ? predictedPos(now) : dwarfRenderPos(rd, now);
-    hole(v, pos.x * TILE_PX, (pos.y - 1) * TILE_PX, HELMET_RADIUS, 0.95);
+  const lights = collectLights(now);
+  for (const l of lights) {
+    hole(v, l.wx, l.wy, l.r, l.facing === 0 ? 1 : 0.95);
+    if (l.facing !== 0) {
+      // helmet beam: a cheap cone, faked with two shrinking holes ahead
+      hole(v, l.wx + l.facing * 1.3 * TILE_PX, l.wy, l.r * 0.8, 0.8);
+      hole(v, l.wx + l.facing * 2.4 * TILE_PX, l.wy + 0.3 * TILE_PX, l.r * 0.55, 0.6);
+    }
   }
 
   mctx.globalCompositeOperation = 'source-over';
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.drawImage(mask, 0, 0);
+  ctx.restore();
+
+  // warm pass: torchlight color floating over everything the light touches
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalCompositeOperation = 'lighter';
+  for (const l of lights) {
+    if (l.wy < SURFACE_Y * TILE_PX) continue; // sunlight zone needs no torch tint
+    const sx = (l.wx - v.camX) * v.scale;
+    const sy = (l.wy - v.camY) * v.scale;
+    const r = l.r * TILE_PX * v.scale * (l.facing === 0 ? 0.95 : 0.8);
+    if (sx < -r || sx > v.w + r || sy < -r || sy > v.h + r) continue;
+    const g = ctx.createRadialGradient(sx, sy, r * 0.05, sx, sy, r);
+    const warm = l.facing === 0 ? 0.085 : 0.05;
+    g.addColorStop(0, `rgba(255,160,60,${warm})`);
+    g.addColorStop(1, 'rgba(255,120,40,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+  }
   ctx.restore();
 }

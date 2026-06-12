@@ -1,7 +1,7 @@
 // Central world-event dispatch: applies tile/entity deltas to the client
 // mirror, then layers on cosmetics (particles, shakes, toasts, sounds).
 
-import { WORLD_W } from '../../shared/constants';
+import { CART_X, SURFACE_Y, WORLD_W } from '../../shared/constants';
 import type { Ev } from '../../shared/protocol';
 import { game, update } from '../state';
 import { sfx } from '../audio';
@@ -173,6 +173,20 @@ export function onWorldEvents(evs: Ev[]): void {
       case 'deposit': {
         game.cart = ev.total;
         toast(`${ev.name} banked ${ev.amt} gold`);
+        // golden sparkles fountain out of the cart
+        for (let i = 0; i < Math.min(14, 4 + ev.amt); i++) {
+          particles.push({
+            x: CART_X + 0.2 + Math.random() * 0.6,
+            y: SURFACE_Y - 0.7,
+            vx: (Math.random() * 2 - 1) * 1.2,
+            vy: -1.2 - Math.random() * 1.6,
+            life: 0,
+            maxLife: 0.5 + Math.random() * 0.4,
+            size: 1.2 + Math.random() * 1.6,
+            color: Math.random() > 0.4 ? '#ffd84a' : '#fff0a8',
+            gravity: 6
+          });
+        }
         sfx.deposit();
         break;
       }

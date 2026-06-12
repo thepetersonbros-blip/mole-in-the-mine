@@ -20,6 +20,7 @@ let canvas: HTMLCanvasElement;
 let ctx: CanvasRenderingContext2D;
 let cam = { x: 30 * TILE_PX, y: 8 * TILE_PX };
 let lastFrame = 0;
+let vignette: HTMLCanvasElement | null = null;
 
 export function initRenderer(c: HTMLCanvasElement): void {
   canvas = c;
@@ -34,6 +35,22 @@ function resize(): void {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   canvas.width = Math.floor(canvas.clientWidth * dpr);
   canvas.height = Math.floor(canvas.clientHeight * dpr);
+  vignette = document.createElement('canvas');
+  vignette.width = Math.max(2, Math.floor(canvas.width / 2));
+  vignette.height = Math.max(2, Math.floor(canvas.height / 2));
+  const vc = vignette.getContext('2d')!;
+  const g = vc.createRadialGradient(
+    vignette.width / 2,
+    vignette.height / 2,
+    Math.min(vignette.width, vignette.height) * 0.45,
+    vignette.width / 2,
+    vignette.height / 2,
+    Math.max(vignette.width, vignette.height) * 0.75
+  );
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(2,4,12,0.5)');
+  vc.fillStyle = g;
+  vc.fillRect(0, 0, vignette.width, vignette.height);
 }
 
 function zoomLevel(): number {
@@ -96,18 +113,24 @@ function frame(now: number): void {
   ctx.imageSmoothingEnabled = false;
 
   // --- world ---
-  drawSky(ctx, camX, camX + viewW);
+  drawSky(ctx, camX, camX + viewW, now);
   const tx0 = Math.max(0, Math.floor(camX / TILE_PX) - 1);
   const tx1 = Math.min(WORLD_W - 1, Math.ceil((camX + viewW) / TILE_PX) + 1);
   const ty0 = Math.max(0, Math.floor(camY / TILE_PX) - 1);
   const ty1 = Math.min(WORLD_H - 1, Math.ceil((camY + viewH) / TILE_PX) + 1);
   for (let ty = ty0; ty <= ty1; ty++) {
     for (let tx = tx0; tx <= tx1; tx++) {
-      drawTile(ctx, tileAt(tx, ty), metaAt(tx, ty), tx, ty);
+      drawTile(ctx, tileAt(tx, ty), metaAt(tx, ty), tx, ty, tileAt, now);
     }
   }
+  // depth ambience: the deeper the rock, the colder and heavier the air
+  const depthGrad = ctx.createLinearGradient(0, SURFACE_Y * TILE_PX, 0, WORLD_H * TILE_PX);
+  depthGrad.addColorStop(0, 'rgba(8,10,26,0)');
+  depthGrad.addColorStop(1, 'rgba(8,10,30,0.34)');
+  ctx.fillStyle = depthGrad;
+  ctx.fillRect(camX, Math.max(SURFACE_Y * TILE_PX, camY), viewW, viewH);
 
-  drawCamp(ctx, game.cart, game.quota);
+  drawCamp(ctx, game.cart, game.quota, now / 1000);
   drawElevator(ctx, game.elevY, game.elevJammed, now / 1000);
 
   for (const p of game.piles.values()) {
@@ -184,9 +207,15 @@ function frame(now: number): void {
   }
   ctx.globalAlpha = 1;
 
-  // --- darkness ---
+  // --- darkness + warm torchlight ---
   const view: View = { camX, camY, scale, w: vw, h: vh };
   drawDarkness(ctx, view, now);
+
+  // cinematic vignette
+  if (vignette) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(vignette, 0, 0, vw, vh);
+  }
 }
 
 function tileSolid(x: number, y: number): boolean {
